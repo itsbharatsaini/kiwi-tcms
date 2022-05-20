@@ -1,0 +1,8 @@
+-r readthedocs.txt
+tcms-api
+doc8
+isort==5.10.1
+colorama
+black
+parameterized
+textdistance

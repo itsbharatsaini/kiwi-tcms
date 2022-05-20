@@ -1,0 +1,622 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load comments %}
+{% load extra_filters %}
+
+{% block title %}TR-{{ object.pk }}: {{ object.summary }}{% endblock %}
+{% block body_class %}cards-pf{% endblock %}
+
+{% block contents %}
+
+<div class="container-cards-pf">
+    <!-- Important:  if you need to nest additional .row within a .row.row-cards-pf, do *not* use .row-cards-pf on the nested .row  -->
+    <h1 class="col-md-12" style="margin-top: 0; {% if object.stop_date %}text-decoration: line-through{% endif %}">
+        <span id="test_run_pk"
+            data-pk="{{ object.pk }}"
+            data-plan-pk="{{ object.plan_id }}"
+            data-perm-remove-tag="{{ perms.testruns.delete_testruntag }}"
+            data-perm-add-comment="{{ perms.django_comments.add_comment }}"
+            data-perm-remove-comment="{{ perms.django_comments.delete_comment }}"
+            data-trans-no-executions-selected="{% trans 'No rows selected! Please select at least one!'%}"
+            data-trans-enter-assignee-name-or-email="{% trans 'Enter username, email or user ID:'%}"
+            data-trans-are-you-sure="{% trans 'Are you sure?' %}"
+            data-trans-error-adding-cases="{% trans 'Unconfirmed test cases were not added' %}"
+            data-trans-bool-value-required="{% trans 'Type 0 or 1' %}"
+            data-trans-comment="{% trans 'Comment' %}:"
+        {% for status in execution_statuses %}
+            data-trans-execution-status-{{ status.pk }}="{{ status.name }}"
+        {% endfor %}
+        >TR-{{ object.pk }}:</span> {{ object.summary }}
+    </h1>
+
+    <div class="row row-cards-pf">
+        <div class="col-xs-12 col-sm-12 col-md-3">
+            <div class="card-pf card-pf-accented card-pf-aggregate-status">
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa pficon-topology"></span>{% trans 'Test plan' %}:
+                    <a href="{% url 'test_plan_url_short' object.plan.pk %}">TP-{{ object.plan.pk }}: {{ object.plan.name }}</a>
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa-shopping-cart"></span>{% trans 'Product' %}:
+                    <a href="{% url 'testruns-search' %}?product={{ object.plan.product_id }}" title="Search test runs of {{ object.plan.product }}">{{ object.plan.product }}</a>
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa-random"></span>{% trans 'Version' %}:
+                    <a href="{% url 'testruns-search' %}?product={{ object.plan.product_id }}&version={{ object.plan.product_version_id }}" title="Search test runs of {{ object.plan.product_version.value }}">{{ object.plan.product_version.value }}</a>
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa-wrench"></span>{% trans 'Build' %}:
+                    <a href="{% url 'testruns-search' %}?product={{ object.plan.product_id }}&version={{ object.plan.product_version_id }}&build={{ object.build_id }}" title="Search test runs of {{ object.build }}">{{ object.build }}</a>
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa pficon-user"></span>{% trans 'Manager' %}:
+                    <a href="{% url 'tcms-profile' object.manager.username %}">{{ object.manager.username }}</a>
+                </h2>
+
+                {% if object.default_tester %}
+                    <h2 class="card-pf-title" style="text-align: left">
+                        <span class="fa fa-search"></span>{% trans 'Default tester' %}:
+                        <a href="{% url 'tcms-profile' object.default_tester.username %}">{{ object.default_tester.username }}</a>
+                    </h2>
+                {% endif %}
+
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa fa-calendar-o"></span>{% trans 'Planned start' %}:
+                    {{ object.planned_start|default:'-'}}
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa-calendar"></span>{% trans 'Started at' %}:
+                    <span class="start-date">
+                        {{ object.start_date|default:'-' }}
+                    </span>
+                    {% if not object.start_date %}
+                        <button class="btn btn-success btn-xs pull-right"
+                                type="button" id="start-button" title="{% trans 'Start' %}">
+                            <i class="fa fa-check" style="color: white; margin: auto"></i>
+                        </button>
+                    {% endif %}
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left">
+                    <span class="fa fa fa-calendar-o"></span>{% trans 'Planned stop' %}:
+                    {{ object.planned_stop|default:'-' }}
+                </h2>
+
+                <h2 class="card-pf-title" style="text-align: left; overflow: hidden;">
+                    <span class="fa fa-calendar-check-o"></span>{% trans 'Finished at' %}:
+                    <span class="stop-date">
+                        {{ object.stop_date|default:'-' }}
+                    </span>
+                    {% if not object.stop_date %}
+                        <button class="btn btn-warning btn-xs pull-right"
+                                type="button" id="stop-button" title="{% trans 'Stop' %}">
+                            <i class="fa fa-check" style="color: white; margin: auto"></i>
+                        </button>
+                    {% endif %}
+                </h2>
+
+                <div class="card-pf-body"></div>
+            </div>
+        </div>
+
+        <div class="col-xs-12 col-sm-6 col-md-3">
+            <div class="card-pf card-pf-accented card-pf-aggregate-status">
+                <div class="card-pf-body">
+                    <div class="progress hidden-print">
+                        <div class="progress-bar progress-completed progress-bar-success progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="font-weight: bold;" data-toggle="tooltip"></div>
+                        <div class="progress-bar progress-bar-remaining" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="font-weight: bold; color: black;" data-toggle="tooltip"></div>
+                        <div class="progress-bar progress-failed progress-bar-danger progress-bar-striped" role="progressbar" aria-valuemin="0" aria-valuemax="100" style="font-weight: bold;" data-toggle="tooltip"></div>
+                    </div>
+                    <div>
+                        <ul class="count-per-status-container list-group" style="columns: 2; margin: 0;">
+                            {% for status in execution_statuses%}
+                            <li class="list-group-item" style="padding:0; text-align:left">
+                                <label>{{ status.name }}</label> - <a id="count-for-status-{{ status.pk }}" href="#"></a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+
+                        <div style="text-align: center">
+                            <label>{% trans "TOTAL" %}</label> - <a href="{% url 'testruns-get' object.pk %}" class="total-execution-count"></a>
+                        </div>
+                    </div>
+                    <div style="text-align: left">
+                        {{ object.notes|markdown2html }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xs-12 col-sm-12 col-md-3">
+            {% trans "Environment" as environment_title %}
+            {% include "include/properties_card.html" with card_title=environment_title hide_add_button=True hide_delete_button=True %}
+        </div>
+
+        <div class="col-xs-12 col-sm-6 col-md-3">
+            {% include 'include/tags_card.html' with add_perm=perms.testruns.add_testruntag %}
+        </div>
+
+    </div> <!-- /row -->
+
+    <div class="row row-cards-pf">
+        <div class="col-xs-12 col-sm-12 col-md-12">
+            <div class="card-pf card-pf-accented">
+                <h2 class="card-pf-title">
+                    {% trans 'Test executions' %}
+                </h2>
+                <div class="container-fluid">
+                    <div class="row toolbar-pf">
+                        <div class="col-sm-12" style="padding-left:0">
+                            <form class="toolbar-pf-actions hidden-print">
+                                <div class="form-group" style="padding-left:10px; padding-right:0; border:0">
+                                    <div class="dropdown btn-group">
+                                        <button class="btn btn-link dropdown-toggle"
+                                                type="button" id="toolbarActions"
+                                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                            <span class="fa fa-bars"></span>
+                                        </button>
+
+                                        <ul class="dropdown-menu" aria-labelledby="toolbarActions">
+                                        {% if perms.testruns.add_testrun %}
+                                            <li>
+                                                <a class="js-bulk-create-testrun" href="#">
+                                                    <span class="fa fa-file-text-o"></span>
+                                                    {% trans 'New Test Run' %}
+                                                </a>
+                                            </li>
+                                            <li class="divider"></li>
+                                        {% endif %}
+
+                                        {% if perms.testruns.change_testexecution %}
+                                            <li>
+                                                <a href="#" class="update-case-text-bulk">
+                                                    <span class="fa fa-refresh"></span>
+                                                    {% trans 'Update text version' %}
+                                                </a>
+                                            </li>
+
+                                            <li class="dropdown-submenu">
+                                                <a href="#">
+                                                    <span class="fa fa-stethoscope"></span>
+                                                    {% trans 'Status' %}
+                                                </a>
+
+                                                <ul class="dropdown-menu dropdown-menu-right">
+                                                {% for status in execution_statuses %}
+                                                    <li>
+                                                        <a href="#" class="bulk-change-status" data-status-id="{{ status.pk }}">
+                                                            <span class="{{ status.icon }}"></span>
+                                                            {{ status.name }}
+                                                        </a>
+                                                    </li>
+                                                {% endfor %}
+                                                </ul>
+                                            </li>
+
+                                            <li>
+                                                <a href="#" class="change-assignee-bulk">
+                                                    <span class="fa pficon-user"></span>
+                                                    {% trans 'Assignee' %}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% if perms.django_comments.add_comment %}
+                                            <li class="divider"></li>
+                                            <li>
+                                                <a href="#" class="add-comment-bulk">
+                                                    <span class="fa fa-comment-o"></span>
+                                                    {% trans 'Add comment' %}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% if perms.linkreference.add_linkreference %}
+                                            <li class="divider"></li>
+                                            <li>
+                                                <a href="#" class="add-hyperlink-bulk"
+                                                   data-toggle="modal" data-target="#add-link-modal">
+                                                    <span class="fa fa-external-link"></span>
+                                                    {% trans 'Add hyperlink' %}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% if perms.testruns.delete_testexecution %}
+                                            <li class="divider"></li>
+                                            <li>
+                                                <a href="#" class="bg-danger remove-execution-bulk">
+                                                    <span class="fa fa-trash-o"></span>
+                                                    {% trans 'Delete' %}
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-right:15px; padding-right: 8px;">
+                                    <input type="checkbox" class="bulk-select-checkbox">
+                                </div>
+
+                                <div class="form-group toolbar-pf-filter">
+                                    <label class="sr-only" for="filter">{% trans 'Summary' %}</label>
+                                    <div class="input-group">
+                                        <div class="input-group-btn">
+                                            <button type="button" class="btn btn-default dropdown-toggle"
+                                                    id="input-filter-button"
+                                                    data-toggle="dropdown" aria-haspopup="true"
+                                                    aria-expanded="false">
+                                                {% trans 'Summary' %}<span
+                                                    class="caret"></span></button>
+                                            <ul class="dropdown-menu js-toolbar-filter-options">
+                                                <li data-filter-type="case__summary" class="selected"><a href="#">{% trans 'Summary' %}</a></li>
+                                                <li data-filter-type="components"><a href="#">{% trans 'Component' %}</a></li>
+                                                <li data-filter-type="tags"><a href="#">{% trans 'Tag' %}</a></li>
+                                                <li data-filter-type="is_automated"><a href="#">{% trans 'Automated' %}</a></li>
+                                                <li data-filter-type="priority"><a href="#">{% trans 'Priority' %}</a></li>
+                                                <li data-filter-type="category"><a href="#">{% trans 'Category' %}</a></li>
+                                                <li data-filter-type="assignee__username"><a href="#">{% trans 'Assignee' %}</a></li>
+                                                <li data-filter-type="tested_by__username"><a href="#">{% trans 'Tested by' %}</a></li>
+                                                <li data-filter-type="status__name"><a href="#">{% trans 'Status' %}</a></li>
+                                            </ul>
+                                        </div><!-- /btn-group -->
+                                        <input type="text" class="form-control" id="toolbar-filter"
+                                               placeholder="{% trans 'Search' %}">
+                                    </div><!-- /input-group -->
+                                </div>
+
+                            {% if perms.testruns.add_testexecution %}
+                                <div class="form-group">
+                                    <input id="search-testcase"
+                                        type="text"
+                                        placeholder="{% trans 'Search and add test cases' %}"
+                                        class="form-control typeahead">
+
+                                    <button class="btn btn-default"
+                                        href="#" id="btn-add-case" title="{% trans 'Add' %}">
+                                        <span class="fa fa-plus"></span>
+                                    </button>
+
+                                    <button class="btn btn-default"
+                                        href="{% url 'testcases-search' %}?product={{ object.plan.product_id }}{% for status in confirmed_statuses %}&case_status={{ status.pk }}{% endfor %}"
+                                        id="btn-search-cases" title="{% trans 'Advanced search' %}">
+                                        <span class="fa fa-search"></span>
+                                    </button>
+                                </div>
+                            {% endif %}
+                            </form>
+                            <div class="row toolbar-pf-results">
+                                <div class="col-sm-12">
+                                    <h5><span class="test-executions-count"></span> {% trans 'records' %}</h5>
+                                </div>
+                            </div>
+                        </div><!-- /col -->
+                    </div><!-- /row -->
+                </div><!-- /container -->
+                <div class="card-pf-body">
+                    <div id="test-executions-container" class="list-group tree-list-view-pf">
+                        <template id="test-execution-row">
+                            <div class="list-group-item test-execution-element">
+                                <div class="list-group-item-header">
+                                    <div class="list-view-pf-main-info">
+                                        <div class="list-view-pf-left">
+                                            <span class="fa fa-angle-right"></span>
+                                        </div>
+                                        <div class="list-view-pf-checkbox hidden-print" style="margin-top: 0; margin-bottom: 0">
+                                            <input type="checkbox" class="test-execution-checkbox">
+                                        </div>
+                                        <div class="list-view-pf-actions hidden-print" style="margin-top: 0; margin-bottom: 0;">
+                                            <div class="dropdown pull-right dropdown-kebab-pf">
+                                                <button class="btn btn-link dropdown-toggle" type="button" id="dropdownKebabRight9"
+                                                        data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                                    <span class="fa fa-ellipsis-v"></span>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownKebabRight9">
+                                                    <li><a href="#" class="add-link-button" data-toggle="modal" data-target="#add-link-modal">{% trans 'Add hyperlink' %}</a></li>
+                                                    <li><a href="#" class="one-click-bug-report-button" data-toggle="modal" data-target="#one-click-bug-report-modal">{% trans 'Report bug' %}</a></li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        <div class="list-view-pf-body">
+                                            <div class="list-view-pf-description" style="flex: 1 0 30%;">
+                                                <div class="list-group-item-text">
+                                                    <span class="fa fa-bolt js-tc-not-in-tp hidden" title="{% trans 'Test case is not part of parent test plan' %}"></span>
+                                                    <span class="test-execution-info"></span>
+                                                    <a class="test-execution-info-link"></a>
+
+                                                    <p class="help-block">
+                                                        <em class="hidden js-row-properties">
+                                                            <span class="fa fa-cubes" title="{% trans 'Properties' %}"></span>
+                                                        </em>
+
+                                                        <span class="hidden js-row-components">
+                                                            <span class="fa pficon-build" title="{% trans 'Components' %}"></span>
+                                                        </span>
+
+                                                        <span class="hidden js-row-tags">
+                                                            <span class="fa fa-tags" title="{% trans 'Tags' %}"></span>
+                                                        </span>
+                                                    </p>
+                                                 </div>
+                                            </div>
+                                            <div class="list-view-pf-additional-info">
+                                                <div class="list-view-pf-additional-info">
+                                                    <div class="list-view-pf-additional-info-item">
+                                                        <span class="fa test-execution-automated" data-automated="{% trans 'Automated' %}" data-manual="{% trans 'Manual' %}"></span>
+                                                    </div>
+                                                    <div title="{% trans 'Priority' %}" class="list-view-pf-additional-info-item">
+                                                        <span class="fa fa-hourglass"></span>
+                                                        <span class="test-execution-priority"></span>
+                                                    </div>
+                                                    <div title="{% trans 'Category' %}" class="list-view-pf-additional-info-item">
+                                                        <span class="fa fa-tag"></span>
+                                                        <span class="test-execution-category"></span>
+                                                    </div>
+                                                    <div title="{% trans 'Assigned to' %}" class="list-view-pf-additional-info-item">
+                                                        <span class="fa pficon-user"></span>
+                                                        <span class="test-execution-asignee"></span>
+                                                    </div>
+                                                    <div title="{% trans 'Tested by' %}" class="list-view-pf-additional-info-item">
+                                                        <span class="fa fa-search"></span>
+                                                        <span class="test-execution-tester"></span>
+                                                    </div>
+                                                    <div title="{% trans 'Bugs' %}" class="list-view-pf-additional-info-item js-bugs hidden">
+                                                        <span class="fa fa-bug" style="color:#cc0000"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="list-view-pf-additional-info" style="width: 30%;">
+                                                    <div title="{% trans 'Status' %}" class="list-view-pf-additional-info-item">
+                                                        <i class="fa test-execution-status-icon"></i>
+                                                        <strong class="test-execution-status-name"></strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="list-group-item-container container-fluid hidden">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="test-execution-text-container markdown-text">
+                                                <p class="test-execution-text"></p>
+                                                <p class="test-execution-notes">
+                                                    <strong>{% trans 'Notes' %}:</strong>
+                                                </p>
+                                                <div class="test-execution-information">
+                                                    <span style="padding-right: 1.5rem;">
+                                                        <span style="font-weight: bold">
+                                                            {% trans 'Run Date' %}:
+                                                        </span>
+                                                        <span class="run-date"></span>
+                                                    </span>
+                                                    <span style="padding-right: 1.5rem;">
+                                                        <span style="font-weight: bold">
+                                                            {% trans 'Build' %}:
+                                                        </span>
+                                                        <span class="build"></span>
+                                                    </span>
+                                                    <span style="padding-right: 1.5rem;">
+                                                        <span style="font-weight: bold">
+                                                            {% trans 'Text version' %}:
+                                                        </span>
+                                                        <span class="text-version"></span>
+                                                    </span>
+                                                </div>
+                                                <strong>{% trans "Bugs and hyperlinks" %}: </strong>
+                                                <div>
+                                                    <ul class="test-execution-hyperlinks"></ul>
+                                                    <template id="link-entry">
+                                                        <li>
+                                                            <span class="link-icon"></span>
+                                                            <a class="link-url"></a>
+                                                            <a href="#"
+                                                                class="bug-tooltip"
+                                                                style="visibility: hidden;"
+                                                                data-toggle="popover" data-html="true"
+                                                                data-content="undefined"
+                                                                data-trigger="focus"
+                                                                data-placement="right">
+                                                                <span class="fa fa-info-circle hidden-print"></span>
+                                                            </a>
+                                                        </li>
+                                                    </template>
+                                                </div>
+                                                <strong>{% trans "History" %}: </strong>
+                                                <div class="history-container">
+                                                    <template id="history-entry">
+                                                        <div>
+                                                            <span class="history-date"></span> <span class="history-user"></span>
+                                                        </div>
+                                                        <span class="history-change-reason"></span>
+                                                    </template>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div>
+                                                <div class="comment-form hidden-print">
+                                                    {{ comment_form.text }}
+                                                    <div class="form-group" style="padding: 15px; text-align: right; display: flex; justify-content: flex-end;">
+                                                        <span class="status-buttons">
+                                                            {% for status in execution_statuses%}
+                                                            <i class="{{ status.icon }} change-status-button" title="{{ status.name }}" style="font-size: 28px; margin-right: 10px; cursor: pointer; color:{{ status.color }}" data-status-id="{{ status.id }}"></i>
+                                                            {% endfor %}
+                                                        </span>
+                                                        <button class="btn btn-default post-comment">{% trans "Save" %}</button>
+                                                    </div>
+                                                </div>
+                                                <strong>{% trans "Comments" %}:</strong>
+                                                <div class="comments"></div>
+                                            </div>
+                                            <div>
+                                                <span>{% trans 'Attachments' %}:</span>
+                                                <ul class="list-group list-unstyled test-case-attachments">
+                                                    <template id="attachments-list-item">
+                                                        <li class="list-group-item'">
+                                                            <a></a>
+                                                        </li>
+                                                    </template>
+                                                    <li class="list-group-item hidden">{% trans "No attachments" %}</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div> <!-- /row -->
+
+    <div class="row row-cards-pf">
+        <div class="col-xs-12 col-sm-6 col-md-6">
+            {% include 'include/attachments.html' %}
+        </div>
+
+        <div class="col-xs-12 col-sm-6 col-md-3">
+            <div class="card-pf card-pf-accented">
+                <h2 class="card-pf-title">
+                    <span class="fa fa-envelope"></span>
+                    {% trans "Notify" %}
+                </h2>
+
+                <div class="card-pf-body">
+                    <table class="table" id="email-notifications">
+                        <thead>
+                            <tr>
+                                <th>{% trans "Username" %}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+
+                    {% for user in object.cc.all %}
+                        <tr>
+                            <td>{{ user.username }}</td>
+                            <td>
+                            {% if perms.testruns.change_testrun %}
+                                <a href="#" data-uid="{{ user.pk }}" class="js-remove-cc"><span class="pficon-error-circle-o hidden-print"></span></a>
+                            {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+
+                    {% if perms.testruns.change_testrun %}
+                        <tfoot class="hidden-print">
+                            <tr>
+                                <th>
+                                </th>
+                                <th>
+                                    <a href="#" id="add-cc" title="{% trans 'Add' %}">
+                                        <span class="fa fa-plus"></span>
+                                    </a>
+                                </th>
+                            </tr>
+                        </tfoot>
+                    {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div> <!-- /row -->
+</div>
+
+<div class="modal fade" id="add-link-modal" tabindex="-1" role="dialog" aria-labelledby="add-hyperlink-modal-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" aria-label="Close">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <h4 class="modal-title" id="add-hyperlink-modal-title">{% trans "Add hyperlink" %}</h4>
+      </div>
+      <form class="form-horizontal add-hyperlink-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="{{ link_form.url.id_for_label }}">{% trans "URL" %}</label>
+            <div class="col-sm-9">
+                <input type="url" name="{{ link_form.url.name }}" maxlength="{{ link_form.url.field.max_length }}" {% if link_form.url.field.required %}required{% endif %} id="{{ link_form.url.id_for_label }}" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="{{ link_form.name.id_for_label }}">{% trans "Name" %}</label>
+            <div class="col-sm-9">
+                <input type="text" name="{{ link_form.name.name }}" maxlength="{{ link_form.name.field.max_length }}" {% if link_form.name.field.required %}required{% endif %} id="{{ link_form.name.id_for_label }}" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="col-md-3 col-lg-3 col-sm-3 control-label" for="defectCheckbox">{% trans "Is a defect" %}</label>
+            <div class="col-md-3 col-lg-3 col-sm-3">
+                <input class="bootstrap-switch" type="checkbox" id="defectCheckbox" data-on-text="{% trans 'Yes' %}" data-off-text="{% trans 'No' %}"/>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">{% trans "Cancel" %}</button>
+            <button type="submit" class="btn btn-primary add-hyperlink-button">{% trans "Save" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="one-click-bug-report-modal" tabindex="-1" role="dialog" aria-labelledby="one-click-bug-report-title" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true" aria-label="Close">
+          <span class="pficon pficon-close"></span>
+        </button>
+        <h4 class="modal-title" id="one-click-bug-report-title">{% trans "Report bug" %}</h4>
+      </div>
+      <form class="form-horizontal one-click-bug-report-form">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="col-sm-3 control-label" for="issue-tracker-select">{% trans "Issue Tracker" %}</label>
+            <div class="col-sm-9">
+                <select name="issue-tracker" id="id-issue-tracker" class="form-control selectpicker">
+                    {% for btr in bug_trackers %}
+                        <option value="{{ btr.pk }}">{{ btr.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-danger" data-dismiss="modal">{% trans "Cancel" %}</button>
+            <button type="submit" class="btn btn-primary one-click-bug-report-button">{% trans "Report bug" %}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{{ comment_form.media }}
+
+{% include 'include/comments_for_object_template.html' %}
+
+<script src="{% static 'typeahead.js/dist/typeahead.jquery.min.js' %}"></script>
+<script src="{% static 'bootstrap-switch/dist/js/bootstrap-switch.min.js' %}"></script>
+<script src="{% static 'bootstrap-select/dist/js/bootstrap-select.min.js' %}"></script>
+<script src="{% static 'moment/min/moment.min.js' %}"></script>
+<script src="{% static 'moment-timezone/builds/moment-timezone-with-data.min.js' %}"></script>
+
+<script src="{% static 'js/bugs.js' %}"></script>
+<script src="{% static 'js/utils.js' %}"></script>
+<script src="{% static 'js/jsonrpc.js' %}"></script>
+<script src="{% static 'js/properties.js' %}"></script>
+<script src="{% static 'js/tags.js' %}"></script>
+<script src="{% static 'testruns/js/get.js' %}"></script>
+{% endblock %}

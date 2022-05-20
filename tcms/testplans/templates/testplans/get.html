@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load static %}
+{% load extra_filters %}
+{% load attachments_tags %}
+
+{% block title %}TP-{{ object.pk }}: {{ object.name }}{% endblock %}
+{% block body_class %}cards-pf{% endblock %}
+
+
+{% block contents %}
+<div class="container-cards-pf">
+    <!-- Important:  if you need to nest additional .row within a .row.row-cards-pf, do *not* use .row-cards-pf on the nested .row  -->
+    <h1 class="col-md-12" style="margin-top: 0">
+        {% if not object.is_active %}<s>{% endif %}
+        <span id="test_plan_pk"
+              data-testplan-pk="{{ object.pk }}"
+              data-perm-remove-tag="{{ perms.testplans.delete_testplantag }}"
+              data-perm-change-testcase="{{ perms.testcases.change_testcase }}"
+              data-perm-remove-testcase="{{ perms.testcases.delete_testcaseplan }}"
+              data-perm-add-testcase="{{ perms.testcases.add_testcase }}"
+              data-perm-add-comment="{{ perms.django_comments.add_comment }}"
+              data-perm-delete-comment="{{ perms.django_comments.delete_comment }}"
+              data-trans-username-email-prompt="{% trans 'Enter username, email or user ID:' %}"
+              data-trans-no-testcases-selected="{% trans 'No rows selected! Please select at least one!'%}"
+              data-trans-are-you-sure="{% trans 'Are you sure?' %}"
+              data-trans-cannot-create-testrun="{% trans 'Cannot create TestRun with unconfirmed test cases'%}"
+              data-trans-error-adding-cases="{% trans 'Error adding test cases' %}"
+        >TP-{{ object.pk }}:</span> {{ object.name }}
+        {% if not object.is_active %}</s>{% endif %}
+    </h1>
+
+    <div class="row row-cards-pf">
+        <div class="col-xs-12 col-sm-12 col-md-9">
+            <div class="card-pf card-pf-accented">
+                <div class="card-pf-body">
+                    <div class="markdown-text" id="testplan-text">
+                        {{ object.text|markdown2html }}
+                    </div>
+
+                    <a id="testplan-text-collapse-btn" class="hidden"
+                        style="float: right" title="{% trans 'Show more' %}"
+                        data-toggle="collapse" href="#testplan-text">
+                        <span class="fa fa-angle-double-down"></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xs-12 col-sm-12 col-md-3" id="testplan-info">
+            <div class="card-pf card-pf-accented card-pf-aggregate-status" style="text-align: left">
+                <h2 class="card-pf-title">
+                    <span class="fa pficon-user"></span>{% trans 'Author' %}:
+                    <a href="{% url "tcms-profile" object.author.username %}">{{ object.author.username }}</a>
+                </h2>
+
+                <h2 class="card-pf-title">
+                    <span class="fa fa-calendar"></span>{{ object.create_date }}
+                </h2>
+
+                <h2 class="card-pf-title">
+                <span id="product_pk"
+                      class="fa fa-shopping-cart"></span>{% trans 'Product' %}:
+                    <a href="{% url "plans-search" %}?product={{ object.product_id }}"
+                       title="Search plans of {{ object.product }} ">{{ object.product }}</a>
+                </h2>
+
+                <h2 class="card-pf-title">
+                    <span class="fa fa-random"></span>{% trans 'Version' %}:
+                    {{ object.product_version.value }}
+                </h2>
+
+                <h2 class="card-pf-title">
+                    <span class="fa fa-cube"></span>{% trans 'Plan Type' %}:
+                    {{ object.type.name  }}
+                </h2>
+
+                <h2 class="card-pf-title">
+                    <span class="fa fa-link"></span>{% trans 'Reference link' %}:
+                    {% if object.extra_link %}
+                        <a href="{{ object.extra_link }}">{{ object.extra_link }}</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </h2>
+
+                <div class="card-pf-body" style="margin-top:0">
+                    {{ object.tree_view_html|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cards-pf">
+        <div class="col-xs-12 col-sm-12 col-md-12">
+            <div class="card-pf card-pf-accented">
+                <div class="card-pf-heading">
+                    <h2 class="card-pf-title">
+                        {% trans 'Test cases' %}
+                    </h2>
+                </div>
+                <div class="card-pf-body">
+                    <div class="container-fluid">
+                        <div class="row toolbar-pf">
+                            <div class="col-sm-12 toolbar-pf-filter" style="padding-left:0">
+                                <form class="toolbar-pf-actions">
+                                    <div class="form-group" style="padding-left:10px; padding-right:0; border:0">
+                                        <div class="dropdown btn-group">
+                                            <button class="btn btn-link dropdown-toggle"
+                                                    type="button" id="testCaseActions"
+                                                    data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                                                <span class="fa fa-bars"></span>
+                                            </button>
+
+                                            <ul class="dropdown-menu" aria-labelledby="testCaseActions">
+                                            {% if perms.testruns.add_testrun %}
+                                                <li>
+                                                    <a id="testplan-toolbar-newrun" href="#">
+                                                        <span class="fa fa-file-text-o"></span>
+                                                        {% trans 'New Test Run' %}
+                                                    </a>
+                                                </li>
+                                                <li class="divider"></li>
+                                            {% endif %}
+
+                                            {% if perms.testcases.add_testcase %}
+                                                <li>
+                                                    <a href="{% url "testcases-new" %}?from_plan={{ object.pk }}">
+                                                        <span class="fa fa-pencil"></span>
+                                                        {% trans 'New Test Case' %}
+                                                    </a>
+                                                </li>
+
+                                                <li>
+                                                    <a id="bulk-clone-button" href="#">
+                                                        <span class="fa fa-code-fork" style="margin-left: 1px; margin-right: 1px"></span>
+                                                        {% trans 'Clone' %}
+                                                    </a>
+                                                </li>
+
+                                                <li class="divider"></li>
+                                            {% endif %}
+
+                                            {% if perms.testcases.change_testcase %}
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">
+                                                        <span class="fa fa-stethoscope"></span>
+                                                        {% trans 'Status' %}
+                                                    </a>
+
+                                                    <ul class="dropdown-menu dropdown-menu-right js-toolbar-status">
+                                                    {% for status in statuses %}
+                                                        <li><a data-id="{{ status.id }}" href="#">{{ status.name }}</a></li>
+                                                    {% endfor %}
+                                                    </ul>
+                                                </li>
+
+                                                <li class="dropdown-submenu">
+                                                    <a href="#">
+                                                        <span class="fa fa-hourglass"></span>
+                                                        {% trans 'Priority' %}
+                                                    </a>
+
+                                                    <ul class="dropdown-menu dropdown-menu-right js-toolbar-priority">
+                                                    {% for priority in priorities %}
+                                                        <li><a data-id="{{ priority.id }}" href="#">{{ priority.value }}</a></li>
+                                                    {% endfor %}
+                                                    </ul>
+                                                </li>
+
+                                                <li>
+                                                    <a id="default-tester-button" href="#">
+                                                        <span class="fa fa-search"></span>
+                                                        {% trans 'Default tester' %}
+                                                    </a>
+                                                </li>
+
+                                                <li>
+                                                    <a id="bulk-reviewer-button" href="#">
+                                                        <span class="fa fa-history"></span>
+                                                        {% trans 'Reviewer' %}
+                                                    </a>
+                                                </li>
+
+                                                <li class="divider"></li>
+                                            {% endif %}
+
+                                            {% if perms.testcases.delete_testcaseplan %}
+                                                <li>
+                                                    <a id="delete_button" href="#" class="bg-danger">
+                                                        <span class="fa fa-trash-o"></span>
+                                                        {% trans 'Delete' %}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-right:15px; padding-right: 8px;">
+                                        <input type="checkbox" class="js-checkbox-toolbar">
+                                    </div>
+                                    <div class="form-group toolbar-pf-filter">
+                                        <label class="sr-only" for="filter">{% trans 'Name' %}</label>
+                                        <div class="input-group">
+                                            <div class="input-group-btn">
+                                                <button type="button" class="btn btn-default dropdown-toggle"
+                                                        id="input-filter-button"
+                                                        data-toggle="dropdown" aria-haspopup="true"
+                                                        aria-expanded="false">
+                                                    {% trans 'Summary' %}<span
+                                                        class="caret"></span></button>
+                                                <ul class="dropdown-menu js-toolbar-filter-options">
+                                                    {% include "testplans/toolbar_dropdown.html" with first_class="selected" %}
+                                                    <li data-filter-type="component"><a href="#">{% trans 'Component' %}</a></li>
+                                                    <li data-filter-type="tag"><a href="#">{% trans 'Tag' %}</a></li>
+                                                </ul>
+                                            </div><!-- /btn-group -->
+                                            <input type="text" class="form-control" id="toolbar-filter"
+                                                   placeholder="{% trans 'Search' %}">
+                                        </div><!-- /input-group -->
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="dropdown btn-group">
+                                            <div class="dropdown btn-group ">
+                                                <button type="button" class="btn btn-default dropdown-toggle"
+                                                        id="sort-button"
+                                                        data-toggle="dropdown"
+                                                        aria-haspopup="true"
+                                                        aria-expanded="false">{% trans 'Sort key' %}<span
+                                                        class="caret"></span></button>
+                                                <ul class="dropdown-menu js-toolbar-sort-options">
+                                                    <li class="selected" data-filter-type="sortkey"><a href="#">{% trans 'Sort key' %}</a></li>
+                                                    {% include "testplans/toolbar_dropdown.html" %}
+                                                </ul>
+                                            </div>
+                                            <button class="btn btn-link js-toolbar-sorting-order" type="button">
+                                                <span class="fa fa-sort-alpha-asc" data-order="1"></span>
+                                                <span class="fa fa-sort-alpha-desc hidden" data-order="-1"></span>
+                                            </button>
+
+                                            {% if perms.testcases.change_testcaseplan %}
+                                            <button class="btn btn-link js-toolbar-manual-sort" type="button" title="{% trans 'Re-order cases' %}">
+                                                <span class="fa fa-sort"></span>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% if perms.testcases.add_testcaseplan %}
+                                    <div class="form-group">
+                                        <input id="search-testcase"
+                                            type="text"
+                                            placeholder="{% trans 'Search and add test cases' %}"
+                                            class="form-control typeahead">
+
+                                        <button class="btn btn-default"
+                                            href="#" id="btn-add-case" title="{% trans 'Add' %}">
+                                            <span class="fa fa-plus"></span>
+                                        </button>
+
+                                        <button class="btn btn-default" href="{% url 'testcases-search' %}"
+                                            id="btn-search-cases" title="{% trans 'Advanced search' %}">
+                                            <span class="fa fa-search"></span>
+                                        </button>
+                                    </div>
+                                {% endif %}
+                                </form>
+                            </div><!-- /col -->
+                        </div><!-- /row -->
+                    </div>
+                    <div id="testcases-list" class="list-group list-view-pf list-view-pf-view">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row row-cards-pf">
+        <div class="col-xs-12 col-sm-12 col-md-3">
+            <div class="card-pf card-pf-accented">
+                <div class="card-pf-heading">
+                    <h2 class="card-pf-title">
+                        <span class="fa fa-forward">
+                        </span>
+                        {% trans 'Active test runs' %}
+                    </h2>
+                </div>
+                <div class="card-pf-body">
+                    <div id="testruns-list" class="list-group list-view-pf list-view-pf-view">
+                        <div class="card-pf-items">
+                            <div class="card-pf-item">
+                                {% for test_run in test_runs %}
+                                    <div class="list-group-item">
+                                        <div class="list-group-item-header">
+                                            <div class="list-view-pf-main-info">
+                                                <div class="list-group-item-text">
+                                                    <a href="{% url 'testruns-get' test_run.pk %}">
+                                                        TR-{{ test_run.pk }}: {{ test_run }}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <div class="card-pf-item text-center">
+                                <a href="{% url "testruns-search" %}?plan={{ object.pk }}">{% trans 'More' %}</a>
+                                |
+                                <a href="{% url "testruns-search" %}?plan={{ object.pk }}&running=0">{% trans 'Inactive' %}</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xs-12 col-sm-6 col-md-3">
+            {% include 'include/tags_card.html' with add_perm=perms.testcases.add_testcasetag %}
+        </div>
+
+        <div class="col-xs-12 col-sm-6 col-md-6">
+            {% include 'include/attachments.html' %}
+        </div>
+    </div>
+
+</div>
+
+<template id="no_test_cases">
+    <div class="list-group-item">
+        <div class="list-group-item-header">
+            <div class="list-view-pf-main-info">{% trans 'No records found' %}</div>
+        </div>
+    </div>
+</template>
+
+<template id="test_case_row">
+    <div class="list-group-item js-testcase-row" data-testcase-pk="">
+        <div class="list-group-item-header">
+            <div class="list-view-pf-main-info">
+                <div class="list-view-pf-left hidden js-testcase-sort-handler">
+                    <span class="fa fa-sort handle"></span>
+                </div>
+                <div class="list-view-pf-left js-testcase-expand-arrow">
+                    <span class="fa fa-angle-right"></span>
+                </div>
+                <div class="list-view-pf-checkbox js-testcase-checkbox" style="margin-top: 0; margin-bottom: 0">
+                    <input type="checkbox">
+                </div>
+                <div class="list-view-pf-actions" style="margin-top: 0; margin-bottom: 0;">
+                    <div class="dropdown pull-right dropdown-kebab-pf">
+                        <button class="btn btn-link dropdown-toggle" type="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                            <span class="fa fa-ellipsis-v"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right">
+                        {% if perms.testcases.add_testcase %}
+                            <li><a class="js-test-case-menu-clone">{% trans 'Clone' %}</a></li>
+                            <li class="divider"></li>
+                        {% endif %}
+                        {% if perms.testcases.change_testcase %}
+                            <li class="dropdown-submenu dropdown-menu-left">
+                                <a tabindex="-1" href="#">{% trans 'Status' %}</a>
+                                <ul class="dropdown-menu js-test-case-menu-status">
+                                    {% for status in statuses %}
+                                        <li><a data-id="{{ status.id }}" href="#">{{ status.name }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                            <li class="dropdown-submenu dropdown-menu-left">
+                                <a tabindex="-1" href="#">{% trans 'Priority' %}</a>
+                                <ul class="dropdown-menu js-test-case-menu-priority">
+                                    {% for priority in priorities %}
+                                        <li><a data-id="{{ priority.id }}" href="#">{{ priority.value }}</a></li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                            <li><a class="js-test-case-menu-tester" href="#">{% trans 'Default tester' %}</a></li>
+                            <li class="divider"></li>
+                            <li><a class="js-test-case-menu-edit">{% trans 'Edit' %}</a></li>
+                            <li class="divider"></li>
+                        {% endif %}
+                        {% if perms.testcases.delete_testcaseplan %}
+                            <li><a class="js-test-case-menu-delete bg-danger" href="#">{% trans 'Delete' %}</a></li>
+                        {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                <div class="list-view-pf-body">
+                    <div class="list-view-pf-description">
+                        <div class="list-group-item-text">
+                             <a class="js-test-case-link"></a>
+                         </div>
+                    </div>
+                    <div class="list-view-pf-additional-info">
+                        <div title="{% trans 'Status' %}" class="list-view-pf-additional-info-item">
+                            <!-- add customizable icon as part of #1932 -->
+                            <span class="js-test-case-status-icon fa"></span>
+                            <span class="js-test-case-status"></span>
+                        </div>
+                        <div class="list-view-pf-additional-info-item">
+                            <span class="fa fa-cog fa-thumbs-up js-test-case-automated" data-true="{% trans 'Automated' %}" data-false="{% trans 'Manual' %}"></span>{# one of the classes is removed by the js #}
+                        </div>
+                        <div title="{% trans 'Priority' %}" class="list-view-pf-additional-info-item">
+                            <span class="fa fa-hourglass"></span>
+                            <span class="js-test-case-priority"></span>
+                        </div>
+                        <div title="{% trans 'Category' %}" class="list-view-pf-additional-info-item">
+                            <span class="fa fa-tag"></span>
+                            <span class="js-test-case-category"></span>
+                        </div>
+                        <div title="{% trans 'Author' %}" class="list-view-pf-additional-info-item">
+                            <span class="fa pficon-user"></span>
+                            <span class="js-test-case-author"></span>
+                        </div>
+                        <div title="{% trans 'Default tester' %}" class="list-view-pf-additional-info-item js-test-case-tester-div">
+                            <span class="fa fa-search"></span>
+                            <span class="js-test-case-tester"></span>
+                        </div>
+
+                        <div title="{% trans 'Reviewer' %}" class="list-view-pf-additional-info-item js-test-case-reviewer-div hidden">
+                            <span class="fa fa-history"></span>
+                            <span class="js-test-case-reviewer"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="list-group-item-container container-fluid hidden">
+            <div class="row">
+                <div class="col-md-9">
+                    <div class="markdown-text js-test-case-expand-text"></div>
+                    <strong>{% trans 'Notes' %}:</strong>
+                    <p class="js-test-case-expand-notes">{% trans 'Notes' %}</p>
+                </div>
+                <div class="col-md-3 text-center">
+                    <span>{% trans 'Attachments' %}:</span>
+                    <ul class="list-group list-unstyled js-test-case-expand-attachments">
+                        <template id="attachments-list-item">
+                        <li class="list-group-item">
+                            <a></a>
+                        </li>
+                        </template>
+                        <li class="list-group-item hidden">{% trans "No attachments" %}</li>
+                    </ul>
+
+                    <span>{% trans 'Components' %}:</span>
+                    <ul class="list-inline js-testcase-expand-components">
+                        <template>
+                            <li>
+                                <span class="label label-default"></span>
+                            </li>
+                        </template>
+                    </ul>
+
+                    <span>{% trans 'Tags' %}:</span>
+                    <ul class="list-inline js-testcase-expand-tags">
+                        <template>
+                            <li>
+                                <span class="label label-default"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <strong>{% trans 'Comments' %}:</strong>
+                    <div class="comments">
+                    </div>
+                </div>
+
+                <div class="col-md-6 js-comment-form-textarea">
+                    {{ comment_form.text }}
+                    <button type="submit" name="action" class="btn btn-default js-post-comment">
+                    {% trans "Save" %}
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</template>
+
+<template id="toolbar-dropdown">
+    <li class="selected" data-filter-type="summary"><a>{% trans 'Summary' %}</a></li>
+    <li data-filter-type="case_status"><a>{% trans 'Status' %}</a></li>
+    <li data-filter-type="is_automated"><a>{% trans 'Automated' %}</a></li>
+    <li data-filter-type="priority"><a>{% trans 'Priority' %}</a></li>
+    <li data-filter-type="category"><a>{% trans 'Category' %}</a></li>
+    <li data-filter-type="author"><a>{% trans 'Author' %}</a></li>
+    <li data-filter-type="default_tester"><a>{% trans 'Default tester' %}</a></li>
+    <li data-filter-type="reviewer"><a>{% trans 'Reviewer' %}</a></li>
+</template>
+
+{% include 'include/comments_for_object_template.html' %}
+
+<script src="{% static 'html5sortable/dist/html5sortable.min.js' %}"></script>
+<script src="{% static 'typeahead.js/dist/typeahead.jquery.min.js' %}"></script>
+
+<script src="{% static 'js/utils.js' %}"></script>
+<script src="{% static 'js/jsonrpc.js' %}"></script>
+<script src="{% static 'js/tags.js' %}"></script>
+<script src="{% static 'testplans/js/get.js' %}"></script>
+
+{{ comment_form.media }}
+
+<style>
+#test-plan-family-tree {
+    overflow: hidden;
+}
+
+#test-plan-family-tree .list-group-item .list-group-item .list-group-item-header::before {
+    border: none;
+}
+
+#test-plan-family-tree .list-group-item-container .list-group-item {
+    padding-left: 25px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,19 @@
+kubectl apply -f db-data-persistentvolumeclaim.yaml,uploads-persistentvolumeclaim.yaml,db-deployment.yaml,db-service.yaml,web-deployment.yaml,web-service.yaml
+
+kubectl delete --all deployments,services,pvc
+kubectl get deployments,pvc,services
+
+
+kubectl apply -f db-data-persistentvolumeclaim.yaml
+kubectl apply -f uploads-persistentvolumeclaim.yaml
+
+kubectl apply -f db-deployment.yaml
+kubectl apply -f db-service.yaml
+kubectl apply -f web-deployment.yaml
+kubectl apply -f web-service.yaml
+
+kubectl get service
+
+kubectl exec kiwi-web-5f4998b4b4-8d26t -it initial_setup
+
+kubectl exec -i -t -n qaautomation web-5f8f4c9599-fmg95 -c kiwi-web -- bash -c "python3 /Kiwi/manage.py initial_setup"

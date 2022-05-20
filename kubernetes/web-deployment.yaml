@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name:  web
+  labels:
+    app: kiwi-tcms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiwi-tcms
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: kiwi-tcms
+        tier: frontend
+    spec:
+      containers:
+        - image: kiwitcms/kiwi:latest
+          name: kiwi-web
+          env:
+            - name: KIWI_DB_HOST
+              value: db
+            - name: KIWI_DB_NAME
+              value: kiwi
+            - name: KIWI_DB_PASSWORD
+              value: kiwi
+            - name: KIWI_DB_PORT
+              value: "3306"
+            - name: KIWI_DB_USER
+              value: kiwi
+          ports:
+            - containerPort: 8080
+            - containerPort: 8443
+
+          volumeMounts:
+            - mountPath: /Kiwi/uploads
+              name: uploads
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 1001
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads

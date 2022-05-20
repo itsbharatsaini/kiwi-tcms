@@ -1,0 +1,80 @@
+/* override some default Patternfly styles */
+nav.navbar-default { border-top-color: #3C8D2C; }
+
+.login-pf, .login-pf body {
+    background-attachment: fixed;
+    background-image: url("../images/header-pattern.png");
+    background-position: bottom right;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+
+/* continue with styles for Kiwi TCMS */
+
+img {
+    height: auto;
+    max-width: 100%;
+}
+
+/* used in regular/admin form error messages */
+/* used in admin error notifications */
+.errorlist, p.errornote + ul.errorlist,
+.grp-messagelist > li.grp-danger {
+    background: #AF2B2B;
+    border:1px solid #6F1B1B;
+    color:#FFF;
+    font-weight:bold;
+}
+
+/* typeahead.js styling for autocomplete */
+.tt-menu {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+    padding: 8px;
+    width: 200px;
+}
+
+.tt-suggestion.tt-cursor {
+    background-color: #0088ce;
+    color: #fff;
+}
+
+.markdown-text table {
+    margin-bottom: 8px;
+}
+
+.markdown-text table td,
+.markdown-text table th {
+    border: 1px solid #ccc;
+    padding: 5px;
+}
+
+@media print {
+    a[href]:after {
+        display: none !important;
+    }
+}
+
+.panel-group .panel-title > a.no-before::before {
+    content: none !important;
+}
+
+#properties-accordion .panel-heading,
+#properties-accordion .panel-body {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.property-value a {
+    color: #c00; inherit !important;
+}
+
+a.disabled {
+    color: #bbb;
+    cursor: default;
+    pointer-events: none;
+    text-decoration: none;
+}

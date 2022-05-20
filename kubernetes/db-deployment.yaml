@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app: kiwi-tcms
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiwi-tcms
+      tier: db
+  template:
+    metadata:
+      labels:
+        app: kiwi-tcms
+        tier: db
+    spec:
+      containers:
+        - image: mariadb:latest
+          name: kiwi-db
+          env:
+            - name: MYSQL_DATABASE
+              value: kiwi
+            - name: MYSQL_PASSWORD
+              value: kiwi
+            - name: MYSQL_ROOT_PASSWORD
+              value: toor
+            - name: MYSQL_USER
+              value: kiwi
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - mountPath: /var/lib/mysql
+              name: db-data
+          resources: {}
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 1001
+      volumes:
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: db-data

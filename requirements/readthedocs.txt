@@ -1,0 +1,16 @@
+-r base.txt
+
+django-debug-toolbar
+Sphinx
+docutils
+
+flake8
+epydoc
+coverage
+factory_boy
+mock
+pydot
+# linting tools
+pylint-django
+twine
+pyOpenSSL
