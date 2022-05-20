@@ -69,7 +69,7 @@ Installation
 ------------
 
 Running Kiwi TCMS as a Docker container
-`Running Kiwi TCMS as a Docker container <http://kiwitcms.readthedocs.io/en/latest/installing_docker.html>`_.
+http://kiwitcms.readthedocs.io/en/latest/installing_docker.html
 
 Running Kiwi TCMS as a Kubernetes Pods
 you will found k8s Deployments, Services, and pvc file in `kiwi-tcms/kubernetes/ folder`_.'
