@@ -75,8 +75,8 @@ Running Kiwi TCMS as a Kubernetes Pods
  - Found k8s Deployments, Services, and pvc file in `kiwi-tcms/kubernetes/ folder`
 
 Cmds : 
-   - `kubectl apply -f db-data-persistentvolumeclaim.yaml,uploads-persistentvolumeclaim.yaml,db-deployment.yaml,db-service.yaml,web-deployment.yaml,web-service.yaml`_.'
-   - `kubectl get deployments,pvc,services`_.'
+   - `kubectl apply -f db-data-persistentvolumeclaim.yaml,uploads-persistentvolumeclaim.yaml,db-deployment.yaml,db-service.yaml,web-deployment.yaml,web-service.yaml`
+   - `kubectl get deployments,pvc,services`
 
 
 Language support
