@@ -72,7 +72,7 @@ Running Kiwi TCMS as a Docker container
 http://kiwitcms.readthedocs.io/en/latest/installing_docker.html
 
 Running Kiwi TCMS as a Kubernetes Pods
-you will found k8s Deployments, Services, and pvc file in `kiwi-tcms/kubernetes/ folder`_.'
+ - Found k8s Deployments, Services, and pvc file in `kiwi-tcms/kubernetes/ folder`
 
 Cmds : 
    - `kubectl apply -f db-data-persistentvolumeclaim.yaml,uploads-persistentvolumeclaim.yaml,db-deployment.yaml,db-service.yaml,web-deployment.yaml,web-service.yaml`_.'
